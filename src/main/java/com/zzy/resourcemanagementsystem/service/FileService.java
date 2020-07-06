@@ -4,7 +4,8 @@ import com.zzy.resourcemanagementsystem.exception.ResourceNotFoundException;
 import com.zzy.resourcemanagementsystem.exception.ResourceStorageException;
 import com.zzy.resourcemanagementsystem.model.File;
 import com.zzy.resourcemanagementsystem.repository.FileRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -12,10 +13,23 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Service
 public class FileService {
 
-    @Autowired
-    private FileRepository fileRepository;
+    private final FileRepository fileRepository;
+
+    public FileService(FileRepository fileRepository) {
+        this.fileRepository = fileRepository;
+    }
+
+    public boolean hasFile(Long fileId) {
+        return fileRepository.existsById(fileId);
+    }
+
+    public boolean isDuplicateFileName(Long parentId, String fileName) {
+        return fileRepository.exists(Example.of(new File(fileName, parentId)));
+    }
+
 
     public File getFile(Long fileId) {
         return fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File not found with id " + fileId));
@@ -41,7 +55,7 @@ public class FileService {
     public boolean updateFileName(Long fileId, String filename) {
         File file = fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File not found with id " + fileId));
         file.setName(filename);
-        file.setUpdateTime();
+        file.setUpdateTime(LocalDateTime.now());
         fileRepository.save(file);
         return true;
     }
@@ -49,15 +63,15 @@ public class FileService {
     public boolean starFile(Long fileId, boolean star) {
         File file = fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File not found with id " + fileId));
         file.setStarred(star);
-        file.setUpdateTime();
+        file.setUpdateTime(LocalDateTime.now());
         fileRepository.save(file);
         return true;
     }
 
-    public boolean removeFile(Long fileId, Long newParentId) {
+    public boolean moveFile(Long fileId, Long newParentId) {
         File file = fileRepository.findById(fileId).orElseThrow(() -> new ResourceNotFoundException("File not found with id " + fileId));
         file.setParentId(newParentId);
-        file.setUpdateTime();
+        file.setUpdateTime(LocalDateTime.now());
         fileRepository.save(file);
         return true;
     }
@@ -65,6 +79,11 @@ public class FileService {
     public boolean deleteFile(Long fileId) {
         fileRepository.deleteById(fileId);
         return true;
+    }
+
+    public List<File> getStarredFiles() {
+        return fileRepository.findAll(Example.of(new File(true
+        )));
     }
 
 }

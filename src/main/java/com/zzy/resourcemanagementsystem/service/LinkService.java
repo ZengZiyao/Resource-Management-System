@@ -3,15 +3,28 @@ package com.zzy.resourcemanagementsystem.service;
 import com.zzy.resourcemanagementsystem.exception.ResourceNotFoundException;
 import com.zzy.resourcemanagementsystem.model.Link;
 import com.zzy.resourcemanagementsystem.repository.LinkRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Example;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Service
 public class LinkService {
 
-    @Autowired
-    private LinkRepository linkRepository;
+    private final LinkRepository linkRepository;
+
+    public LinkService(LinkRepository linkRepository) {
+        this.linkRepository = linkRepository;
+    }
+
+    public boolean hasLink(Long linkId) {
+        return linkRepository.existsById(linkId);
+    }
+
+    public boolean isDuplicateLinkName(Long parentId, String newLinkName) {
+        return linkRepository.exists(Example.of(new Link(newLinkName, parentId)));
+    }
 
     public Link getLinkById(Long linkId) {
         return linkRepository.findById(linkId).orElseThrow(() -> new ResourceNotFoundException("Link cannot find with id " + linkId));
@@ -30,7 +43,7 @@ public class LinkService {
     public boolean updateLinkName(Long linkId, String newLinkName) {
         Link link = linkRepository.findById(linkId).orElseThrow(() -> new ResourceNotFoundException("Link cannot find with id " + linkId));
         link.setName(newLinkName);
-        link.setUpdateTime();
+        link.setUpdateTime(LocalDateTime.now());
         linkRepository.save(link);
         return true;
     }
@@ -38,7 +51,7 @@ public class LinkService {
     public boolean starLink(Long linkId, boolean star) {
         Link link = linkRepository.findById(linkId).orElseThrow(() -> new ResourceNotFoundException("Link cannot find with id " + linkId));
         link.setStarred(star);
-        link.setUpdateTime();
+        link.setUpdateTime(LocalDateTime.now());
         linkRepository.save(link);
         return true;
     }
@@ -46,7 +59,7 @@ public class LinkService {
     public boolean moveLink(Long linkId, Long newParentId) {
         Link link = linkRepository.findById(linkId).orElseThrow(() -> new ResourceNotFoundException("Link cannot find with id " + linkId));
         link.setParentId(newParentId);
-        link.setUpdateTime();
+        link.setUpdateTime(LocalDateTime.now());
         linkRepository.save(link);
         return true;
     }
@@ -54,7 +67,7 @@ public class LinkService {
     public boolean updateUrl(Long linkId, String newUrl) {
         Link link = linkRepository.findById(linkId).orElseThrow(() -> new ResourceNotFoundException("Link cannot find with id " + linkId));
         link.setUrl(newUrl);
-        link.setUpdateTime();
+        link.setUpdateTime(LocalDateTime.now());
         linkRepository.save(link);
         return true;
     }
@@ -62,5 +75,9 @@ public class LinkService {
     public boolean deleteLink(Long linkId) {
         linkRepository.deleteById(linkId);
         return true;
+    }
+
+    public List<Link> getStarredLinks() {
+        return linkRepository.findAll(Example.of(new Link(true)));
     }
 }
